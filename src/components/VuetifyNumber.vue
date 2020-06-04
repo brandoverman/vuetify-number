@@ -22,31 +22,31 @@ export default {
     value: {
       // type: String,
       type: [String, Number],
-      default: "0",
+      default: "0"
     },
     label: {
       type: String,
-      default: "Value",
+      default: "Value"
     },
     readonly: {
       type: Boolean,
-      default: false,
+      default: false
     },
     disabled: {
       type: Boolean,
-      default: false,
+      default: false
     },
     outlined: {
       type: Boolean,
-      default: true,
+      default: true
     },
     clearable: {
       type: Boolean,
-      default: true,
+      default: true
     },
     backgroundColor: {
       type: String,
-      default: "white",
+      default: "white"
     },
     options: {
       type: Object,
@@ -56,10 +56,10 @@ export default {
           prefix: "",
           suffix: "",
           length: 11,
-          precision: 2,
+          precision: 2
         };
-      },
-    },
+      }
+    }
   },
   data: () => ({}),
   /*
@@ -70,14 +70,20 @@ export default {
   computed: {
     cmpValue: {
       get: function() {
+        console.log("cmpValue", this.localeHasLeadingNegativeSign);
         return this.value !== null
           ? this.humanFormat(this.value.toString())
           : null;
       },
       set: function(newValue) {
         this.$emit("input", this.machineFormat(newValue));
-      },
+      }
     },
+    localeHasLeadingNegativeSign() {
+      const format = new Intl.NumberFormat(this.options.locale).format(-1);
+
+      return format.startsWith("-");
+    }
   },
   methods: {
     humanFormat: function(number) {
@@ -87,10 +93,10 @@ export default {
         // number = Number(number).toLocaleString(this.options.locale, {maximumFractionDigits: 2, minimumFractionDigits: 2, style: 'currency', currency: 'BRL'});
         number = Number(number).toLocaleString(this.options.locale, {
           maximumFractionDigits: this.options.precision,
-          minimumFractionDigits: this.options.precision,
+          minimumFractionDigits: this.options.precision
         });
       }
-      // return this.options.prefix + number + this.options.suffix;
+
       return number;
     },
     machineFormat(number) {
@@ -118,18 +124,35 @@ export default {
       if (this.options.precision === 0) {
         number = this.cleanNumber(number);
       }
+
       return number;
     },
+    // Only allow numeric digits or the leading negative number to be
+    // entered.
     keyPress($event) {
-      // console.log($event.keyCode); //keyCodes value
-      let keyCode = $event.keyCode ? $event.keyCode : $event.which;
-      // if ((keyCode < 48 || keyCode > 57) && keyCode !== 46) {
-      if (keyCode < 48 || keyCode > 57) {
-        // 46 is dot
-        $event.preventDefault();
-      }
-      if (this.targetLength()) {
-        $event.preventDefault();
+      const key = $event.key;
+
+      if (key === "-") {
+        if (
+          this.localeHasLeadingNegativeSign &&
+          $event.target.selectionStart === 0
+        ) {
+          // do nothing
+        } else if (
+          !this.localeHasLeadingNegativeSign &&
+          $event.target.selectionStart === this.value.length
+        ) {
+          // do nothing
+        } else {
+          $event.preventDefault();
+        }
+      } else {
+        if (!key.match(/[0-9]/)) {
+          $event.preventDefault();
+        }
+        if (this.targetLength()) {
+          $event.preventDefault();
+        }
       }
     },
     // Retira todos os caracteres não numéricos e zeros à esquerda
@@ -139,19 +162,24 @@ export default {
         let flag = false;
         let arrayValue = value.toString().split("");
         for (var i = 0; i < arrayValue.length; i++) {
-          if (this.isInteger(arrayValue[i])) {
-            if (!flag) {
-              // Retirar zeros à esquerda
-              if (arrayValue[i] !== "0") {
+          if (i === 0 && arrayValue[i] === "-") {
+            result = "-";
+          } else {
+            if (this.isInteger(arrayValue[i])) {
+              if (!flag) {
+                // Retirar zeros à esquerda
+                if (arrayValue[i] !== "0") {
+                  result = result + arrayValue[i];
+                  flag = true;
+                }
+              } else {
                 result = result + arrayValue[i];
-                flag = true;
               }
-            } else {
-              result = result + arrayValue[i];
             }
           }
         }
       }
+
       return result;
     },
     isInteger(value) {
@@ -170,7 +198,7 @@ export default {
       } else {
         return false;
       }
-    },
-  },
+    }
+  }
 };
 </script>
